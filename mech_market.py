@@ -1,12 +1,20 @@
 import re
 
-from praw.reddit import Submission as rs
+from praw.reddit import Submission
+
+from reddit import RedditSubmission
+
+# Only notify submissions with any of these keywords in title.
+HAVING_KEYWORDS = [
+    'milkshake',
+    'weirdo',
+    'oblivion',
+]
 
 
-class Submission(object):
-    def __init__(self, sub: rs):
-        self.title = sub.title.strip()
-        self.flair = sub.link_flair_text
+class MechMarketSubmission(RedditSubmission):
+    def __init__(self, sub: Submission):
+        super().__init__(sub)
         self.type = 'unknown'
         self.tag = ''
         self.location = ''
@@ -52,23 +60,23 @@ class Submission(object):
             else:
                 print(f'### WARNING: unrecognized section: {section}, title: {self.title}')
 
-    def __str__(self):
+    def should_notify(self) -> bool:
+        if self.type != 'personal':
+            return False
+        if not any(k in self.having.lower() for k in HAVING_KEYWORDS):
+            return False
+        return True
+
+    def __str__(self) -> str:
         header = f'title: {self.title}'
         if self.flair:
             header += f'\n  flair: {self.flair}'
         if self.type == 'non-personal':
-            return header + f'\n  tag: {self.tag}'
-        if self.type == 'personal':
-            return header + f'\n  location: {self.location}' \
-                            f'\n  having: {self.having}' \
-                            f'\n  wanting: {self.wanting}'
-        return header + f'\n  type: {self.type}'
-
-
-if __name__ == '__main__':
-    # Some tests.
-    print(Submission(''))
-    print(Submission('Space65 CyberVoyager Pink or White LED Badge'))
-    print(Submission('[US-MD][H] PayPal [W] Space65 CyberVoyager Pink or White LED Badge'))
-    print(Submission('[US-MD] [H] PayPal [W] Space65 CyberVoyager Pink or White LED Badge'))
-    print(Submission('[US-MD] [H] PayPal [W] Space65 CyberVoyager Pink or White LED Badge [extra] text'))
+            header += f'\n  tag: {self.tag}'
+        elif self.type == 'personal':
+            header += f'\n  location: {self.location}' \
+                      f'\n  having: {self.having}' \
+                      f'\n  wanting: {self.wanting}'
+        header += f'\n  type: {self.type}' \
+                  f'\n  link: https://www.reddit.com{self.link}'
+        return header
