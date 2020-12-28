@@ -1,12 +1,14 @@
-import sys
+import argparse
 
 from mech_market import MechMarketSubmission
 from reddit import Reddit
 
 
-def main(reddit_client_id: str,
-         reddit_client_secret: str):
-    reddit = Reddit(reddit_client_id, reddit_client_secret)
+def main(reddit_id: str,
+         reddit_secret: str,
+         discord_id: str,
+         discord_secret: str):
+    reddit = Reddit(reddit_id, reddit_secret)
     for s in reddit.subreddit_stream('mechmarket', skip_existing=False):
         sub = MechMarketSubmission(s)
         if sub.should_notify():
@@ -14,7 +16,11 @@ def main(reddit_client_id: str,
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print('Usage: python main.py <client id> <client secret>')
-        sys.exit(1)
-    main(sys.argv[1], sys.argv[2])
+    parser = argparse.ArgumentParser(description='Listen to reddit and notify with discord.')
+    parser.add_argument('--reddit_id')
+    parser.add_argument('--reddit_secret')
+    parser.add_argument('--discord_id')
+    parser.add_argument('--discord_secret')
+
+    args = parser.parse_args()
+    main(**vars(args))
